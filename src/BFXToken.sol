@@ -10,8 +10,8 @@ contract BFXToken is ERC20, Ownable {
     error MINTERROR__INITIALSUPPLYEXCEEDSMAXSUPPLY();
     error TRANSFERERROR__BELOWMINIMUMTRANSFER();
     error TRANSFERERROR__BELOWMINIMUMBALANCE();
-
-    uint256 public constant MAX_SUPPLY = 1_000_000_303_000_000_000_000_000_000_000_000;
+uint256 public constant INITIAL_SUPPLY = 1_000_000_303 * 10**18;
+   uint256 public constant MAX_SUPPLY = 2_000_000_303 * 10**18;
     uint256 public constant MAX_MINT_PER_WALLET = 10 * 10**18;
     uint256 public constant MIN_TRANSFER_AMOUNT = 2 * 10**18;
     uint256 public constant MIN_WALLET_BALANCE = 2 * 10**18;
