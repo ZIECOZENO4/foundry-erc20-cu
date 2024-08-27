@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,8 +10,11 @@ contract BFXToken is ERC20, Ownable {
     error MINTERROR__INITIALSUPPLYEXCEEDSMAXSUPPLY();
     error TRANSFERERROR__BELOWMINIMUMTRANSFER();
     error TRANSFERERROR__BELOWMINIMUMBALANCE();
-uint256 public constant INITIAL_SUPPLY = 1_000_000_303 * 10**18;
-   uint256 public constant MAX_SUPPLY = 2_000_000_303 * 10**18;
+    error BURNERROR__BELOWMINIMUMBALANCE();
+    error BURNERROR__EXCEEDSBURNAMOUNT();
+
+    uint256 public constant INITIAL_SUPPLY = 1_000_000_303 * 10**18;
+    uint256 public constant MAX_SUPPLY = 2_000_000_303 * 10**18;
     uint256 public constant MAX_MINT_PER_WALLET = 10 * 10**18;
     uint256 public constant MIN_TRANSFER_AMOUNT = 2 * 10**18;
     uint256 public constant MIN_WALLET_BALANCE = 2 * 10**18;
@@ -34,6 +37,27 @@ uint256 public constant INITIAL_SUPPLY = 1_000_000_303 * 10**18;
         }
         _mint(msg.sender, amount);
         mintedTokens[msg.sender] += amount;
+    }
+
+    function burn(uint256 amount) public {
+        if (balanceOf(msg.sender) - amount < MIN_WALLET_BALANCE) {
+            revert BURNERROR__BELOWMINIMUMBALANCE();
+        }
+        _burn(msg.sender, amount);
+    }
+
+    function burnFrom(address account, uint256 amount) public {
+        if (balanceOf(account) - amount < MIN_WALLET_BALANCE) {
+            revert BURNERROR__BELOWMINIMUMBALANCE();
+        }
+        uint256 currentAllowance = allowance(account, msg.sender);
+        if (currentAllowance < amount) {
+            revert BURNERROR__EXCEEDSBURNAMOUNT();
+        }
+        unchecked {
+            _approve(account, msg.sender, currentAllowance - amount);
+        }
+        _burn(account, amount);
     }
 
     function transfer(address to, uint256 amount) public virtual override returns (bool) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {BFXToken} from "../src/BFXToken.sol";
@@ -191,5 +191,66 @@ function testDeployBFXToken() public {
         bfxToken.transferFrom(owner, user2, amount);
         assertEq(bfxToken.balanceOf(owner), bfxToken.MIN_WALLET_BALANCE());
     }
+ function testBurn() public {
+        uint256 burnAmount = 1000 * 10**18;
+        uint256 initialBalance = bfxToken.balanceOf(owner);
+        
+        bfxToken.burn(burnAmount);
+        
+        assertEq(bfxToken.balanceOf(owner), initialBalance - burnAmount, "Balance should decrease after burning");
+        assertEq(bfxToken.totalSupply(), INITIAL_SUPPLY - burnAmount, "Total supply should decrease after burning");
+    }
 
+    // function testBurnMoreThanBalance() public {
+    //     uint256 balance = bfxToken.balanceOf(owner);
+    //     vm.expectRevert(BFXToken.BURNERROR__BELOWMINIMUMBALANCE.selector);
+    //     bfxToken.burn(balance + 1);
+    // }
+
+    function testBurnBelowMinimumBalance() public {
+        uint256 balance = bfxToken.balanceOf(owner);
+        uint256 burnAmount = balance - bfxToken.MIN_WALLET_BALANCE() + 1;
+        vm.expectRevert(BFXToken.BURNERROR__BELOWMINIMUMBALANCE.selector);
+        bfxToken.burn(burnAmount);
+    }
+
+    function testBurnFrom() public {
+        uint256 burnAmount = 1000 * 10**18;
+        bfxToken.transfer(user1, burnAmount * 2);
+        
+        vm.prank(user1);
+        bfxToken.approve(user2, burnAmount);
+        
+        uint256 initialBalance = bfxToken.balanceOf(user1);
+        
+        vm.prank(user2);
+        bfxToken.burnFrom(user1, burnAmount);
+        
+        assertEq(bfxToken.balanceOf(user1), initialBalance - burnAmount, "Balance should decrease after burnFrom");
+        assertEq(bfxToken.totalSupply(), INITIAL_SUPPLY - burnAmount, "Total supply should decrease after burnFrom");
+    }
+
+    function testBurnFromMoreThanAllowance() public {
+        uint256 burnAmount = 1000 * 10**18;
+        bfxToken.transfer(user1, burnAmount * 2);
+        
+        vm.prank(user1);
+        bfxToken.approve(user2, burnAmount - 1);
+        
+        vm.prank(user2);
+        vm.expectRevert(BFXToken.BURNERROR__EXCEEDSBURNAMOUNT.selector);
+        bfxToken.burnFrom(user1, burnAmount);
+    }
+
+    function testBurnFromBelowMinimumBalance() public {
+        uint256 transferAmount = bfxToken.MIN_WALLET_BALANCE() * 2;
+        bfxToken.transfer(user1, transferAmount);
+        
+        vm.prank(user1);
+        bfxToken.approve(user2, transferAmount);
+        
+        vm.prank(user2);
+        vm.expectRevert(BFXToken.BURNERROR__BELOWMINIMUMBALANCE.selector);
+        bfxToken.burnFrom(user1, transferAmount);
+    }
 }
